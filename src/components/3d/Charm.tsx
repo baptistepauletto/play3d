@@ -1,7 +1,8 @@
-import React, { useRef, useMemo } from 'react'
+import React, { useRef, useMemo, Suspense } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { Box, Sphere, Cylinder } from '@react-three/drei'
+import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { createFallbackCharm } from '../../utils/modelFallbacks'
 import type { Charm as CharmType } from '../../types'
 
 export interface CharmProps {
@@ -12,6 +13,58 @@ export interface CharmProps {
   animate?: boolean
   onClick?: (charm: CharmType) => void
   onHover?: (charm: CharmType | null) => void
+}
+
+// Loading fallback component
+const CharmFallback: React.FC<{ charm: CharmType; material: React.ReactElement }> = ({ charm, material }) => {
+  const fallbackGeometry = useMemo(() => {
+    return createFallbackCharm(charm.type)
+  }, [charm.type])
+
+  return (
+    <primitive object={fallbackGeometry}>
+      {/* Apply material to all meshes in the fallback geometry */}
+      {fallbackGeometry.children.map((child, index) => {
+        if (child instanceof THREE.Mesh) {
+          return (
+            <mesh key={index} geometry={child.geometry} position={child.position} rotation={child.rotation}>
+              {material}
+            </mesh>
+          )
+        }
+        return null
+      })}
+    </primitive>
+  )
+}
+
+// GLTF Model component
+const CharmModel: React.FC<{ modelPath: string; material: React.ReactElement; charm: CharmType }> = ({ 
+  modelPath, 
+  material, 
+  charm 
+}) => {
+  try {
+    const { scene } = useGLTF(modelPath)
+    
+    // Clone the scene to avoid modifying the original
+    const clonedScene = useMemo(() => scene.clone(), [scene])
+    
+    // Apply materials to all meshes in the loaded model
+    useMemo(() => {
+      clonedScene.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          // Store original material for potential restoration
+          child.userData.originalMaterial = child.material
+        }
+      })
+    }, [clonedScene])
+
+    return <primitive object={clonedScene} />
+  } catch (error) {
+    console.warn(`Failed to load model ${modelPath}, using fallback`, error)
+    return <CharmFallback charm={charm} material={material} />
+  }
 }
 
 export const Charm: React.FC<CharmProps> = ({
@@ -56,7 +109,6 @@ export const Charm: React.FC<CharmProps> = ({
             color={mat.color}
             metalness={0.1}
             roughness={0.2}
-            // Add subsurface scattering effect for pearls
           />
         )
       default:
@@ -69,67 +121,6 @@ export const Charm: React.FC<CharmProps> = ({
         )
     }
   }, [charm.material])
-
-  // Render appropriate geometry based on charm type
-  const renderGeometry = () => {
-    const size = charm.size * scale
-
-    switch (charm.type) {
-      case 'pendant':
-        // Complex pendant shape - for now using a combination of shapes
-        return (
-          <group>
-            {/* Main pendant body */}
-            <Box args={[size * 0.8, size * 1.2, size * 0.3]} position={[0, -size * 0.4, 0]}>
-              {material}
-            </Box>
-            {/* Attachment ring */}
-            <Cylinder 
-              args={[size * 0.15, size * 0.15, size * 0.1, 8]} 
-              position={[0, size * 0.4, 0]}
-              rotation={[Math.PI / 2, 0, 0]}
-            >
-              {material}
-            </Cylinder>
-          </group>
-        )
-      
-      case 'bead':
-        return (
-          <Sphere args={[size * 0.5]}>
-            {material}
-          </Sphere>
-        )
-      
-      case 'gemstone':
-        // Octahedral gemstone shape
-        return (
-          <group>
-            <Box args={[size * 0.6, size * 0.6, size * 0.6]} rotation={[Math.PI / 4, Math.PI / 4, 0]}>
-              {material}
-            </Box>
-          </group>
-        )
-      
-      case 'ornament':
-        // Decorative ornament - using torus for now
-        return (
-          <group>
-            <mesh>
-              <torusGeometry args={[size * 0.4, size * 0.2, 8, 16]} />
-              {material}
-            </mesh>
-          </group>
-        )
-      
-      default:
-        return (
-          <Box args={[size, size, size]}>
-            {material}
-          </Box>
-        )
-    }
-  }
 
   // Animation frame update
   useFrame((_state, delta) => {
@@ -161,6 +152,8 @@ export const Charm: React.FC<CharmProps> = ({
     document.body.style.cursor = 'default'
   }
 
+
+
   return (
     <group
       ref={meshRef}
@@ -171,7 +164,9 @@ export const Charm: React.FC<CharmProps> = ({
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
     >
-      {renderGeometry()}
+      <Suspense fallback={<CharmFallback charm={charm} material={material} />}>
+        <CharmModel modelPath={charm.modelPath} material={material} charm={charm} />
+      </Suspense>
       
       {/* Add a subtle glow effect for rare charms */}
       {charm.metadata?.rarity === 'legendary' && (

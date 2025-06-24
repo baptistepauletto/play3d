@@ -39,7 +39,7 @@ Create a premium, interactive 3D website that displays necklaces with:
 - [x] **Step 1.2**: Install and configure Three.js ecosystem ✅
 - [x] **Step 1.3**: Set up basic 3D scene with camera and lighting ✅
 - [x] **Step 1.4**: Create project structure and component architecture ✅
-- [ ] **Step 1.5**: Implement basic GLTF model loading system
+- [x] **Step 1.5**: Implement basic GLTF model loading system ✅
 
 ### Phase 2: 3D Scene Development (Week 2)
 - [ ] **Step 2.1**: Design and implement advanced lighting setup
