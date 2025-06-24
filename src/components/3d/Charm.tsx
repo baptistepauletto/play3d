@@ -16,7 +16,7 @@ export interface CharmProps {
 }
 
 // Loading fallback component
-const CharmFallback: React.FC<{ charm: CharmType; material: React.ReactElement }> = ({ charm, material }) => {
+const CharmFallback: React.FC<{ charm: CharmType; materialElement: React.ReactElement }> = ({ charm, materialElement }) => {
   const fallbackGeometry = useMemo(() => {
     return createFallbackCharm(charm.type)
   }, [charm.type])
@@ -28,7 +28,7 @@ const CharmFallback: React.FC<{ charm: CharmType; material: React.ReactElement }
         if (child instanceof THREE.Mesh) {
           return (
             <mesh key={index} geometry={child.geometry} position={child.position} rotation={child.rotation}>
-              {material}
+              {materialElement}
             </mesh>
           )
         }
@@ -39,9 +39,9 @@ const CharmFallback: React.FC<{ charm: CharmType; material: React.ReactElement }
 }
 
 // GLTF Model component
-const CharmModel: React.FC<{ modelPath: string; material: React.ReactElement; charm: CharmType }> = ({ 
+const CharmModel: React.FC<{ modelPath: string; materialElement: React.ReactElement; charm: CharmType }> = ({ 
   modelPath, 
-  material, 
+  materialElement, 
   charm 
 }) => {
   try {
@@ -63,7 +63,7 @@ const CharmModel: React.FC<{ modelPath: string; material: React.ReactElement; ch
     return <primitive object={clonedScene} />
   } catch (error) {
     console.warn(`Failed to load model ${modelPath}, using fallback`, error)
-    return <CharmFallback charm={charm} material={material} />
+    return <CharmFallback charm={charm} materialElement={materialElement} />
   }
 }
 
@@ -79,8 +79,10 @@ export const Charm: React.FC<CharmProps> = ({
   const meshRef = useRef<THREE.Group>(null)
   const time = useRef(0)
 
-  // Create material based on charm material definition
-  const material = useMemo(() => {
+  // Enhanced material is available via JewelryMaterials.createMaterial(charm.material) if needed for Three.js objects
+
+  // Create JSX element for the material (for fallback geometry)
+  const materialElement = useMemo(() => {
     const mat = charm.material
     
     switch (mat.type) {
@@ -90,6 +92,7 @@ export const Charm: React.FC<CharmProps> = ({
             color={mat.color}
             metalness={mat.metallic || 1}
             roughness={mat.roughness || 0.1}
+            envMapIntensity={1.5}
           />
         )
       case 'gemstone':
@@ -97,10 +100,13 @@ export const Charm: React.FC<CharmProps> = ({
           <meshPhysicalMaterial
             color={mat.color}
             metalness={0}
-            roughness={mat.roughness || 0.05}
-            transmission={mat.transparency || 0.9}
+            roughness={mat.roughness || 0.02}
+            transmission={mat.transparency || 0.95}
             ior={mat.refraction || 1.5}
-            thickness={0.5}
+            thickness={0.8}
+            clearcoat={1.0}
+            clearcoatRoughness={0.02}
+            envMapIntensity={2.0}
           />
         )
       case 'pearl':
@@ -109,6 +115,9 @@ export const Charm: React.FC<CharmProps> = ({
             color={mat.color}
             metalness={0.1}
             roughness={0.2}
+            envMapIntensity={1.8}
+            transparent={true}
+            opacity={0.95}
           />
         )
       default:
@@ -164,9 +173,9 @@ export const Charm: React.FC<CharmProps> = ({
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
     >
-      <Suspense fallback={<CharmFallback charm={charm} material={material} />}>
-        <CharmModel modelPath={charm.modelPath} material={material} charm={charm} />
-      </Suspense>
+              <Suspense fallback={<CharmFallback charm={charm} materialElement={materialElement} />}>
+          <CharmModel modelPath={charm.modelPath} materialElement={materialElement} charm={charm} />
+        </Suspense>
       
       {/* Add a subtle glow effect for rare charms */}
       {charm.metadata?.rarity === 'legendary' && (

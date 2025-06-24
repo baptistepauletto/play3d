@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
-import { OrbitControls, Text } from '@react-three/drei'
-import { Lighting } from './Lighting'
+import { OrbitControls, Text, Environment } from '@react-three/drei'
 import { Necklace } from './Necklace'
 import { METALS } from '../../types'
 import type { Necklace as NecklaceType, ViewerState } from '../../types'
@@ -20,15 +19,15 @@ export const Scene: React.FC<SceneProps> = ({
 }) => {
   const [hoveredCharm, setHoveredCharm] = useState<string | null>(null)
 
-  // Create a demo necklace with fallback model paths
+  // Create a simple demo necklace with enhanced materials
   const demoNecklace: NecklaceType = {
     id: 'demo-necklace',
-    name: 'Demo Gold Chain with Charms',
+    name: 'Brilliant Gold Necklace',
     base: {
       id: 'demo-base',
       name: 'Gold Chain Base',
       type: 'chain',
-      modelPath: '/models/fallback/chain.gltf', // Will use fallback geometry
+      modelPath: '/models/fallback/chain.gltf',
       material: METALS.GOLD_18K,
       length: 8,
       attachmentPoints: [
@@ -48,22 +47,6 @@ export const Scene: React.FC<SceneProps> = ({
           maxCharmSize: 1,
           occupied: true,
         },
-        {
-          id: 'right',
-          position: [1.2, -0.5, 0.8],
-          rotation: { _x: 0, _y: 0, _z: 0, _order: 'XYZ' } as any,
-          type: 'segment',
-          maxCharmSize: 1,
-          occupied: true,
-        },
-        {
-          id: 'left-side',
-          position: [-0.8, -0.3, 0.6],
-          rotation: { _x: 0, _y: 0, _z: 0, _order: 'XYZ' } as any,
-          type: 'segment',
-          maxCharmSize: 0.8,
-          occupied: false,
-        },
       ],
       physics: {
         segments: 32,
@@ -77,7 +60,7 @@ export const Scene: React.FC<SceneProps> = ({
           id: 'heart-pendant',
           name: 'Gold Heart Pendant',
           type: 'pendant',
-          modelPath: '/models/fallback/heart.gltf', // Will use fallback geometry
+          modelPath: '/models/fallback/heart.gltf',
           material: METALS.GOLD_18K,
           size: 1.2,
           weight: 0.3,
@@ -91,51 +74,20 @@ export const Scene: React.FC<SceneProps> = ({
       },
       {
         charm: {
-          id: 'pearl-bead',
-          name: 'Lustrous Pearl',
+          id: 'silver-bead',
+          name: 'Silver Accent Bead',
           type: 'bead',
-          modelPath: '/models/fallback/pearl.gltf', // Will use fallback geometry
-          material: {
-            type: 'pearl',
-            name: 'Natural Pearl',
-            color: '#f8f8ff',
-            metallic: 0.1,
-            roughness: 0.2,
-          },
-          size: 0.6,
+          modelPath: '/models/fallback/pearl.gltf',
+          material: METALS.SILVER_925,
+          size: 0.5,
           weight: 0.1,
           attachmentType: 'segment',
           metadata: {
-            description: 'A lustrous natural pearl',
-            rarity: 'rare',
+            description: 'A polished silver accent bead',
+            rarity: 'common',
           },
         },
         attachmentPointId: 'left',
-      },
-      {
-        charm: {
-          id: 'sapphire-gem',
-          name: 'Blue Sapphire',
-          type: 'gemstone',
-          modelPath: '/models/fallback/sapphire.gltf', // Will use fallback geometry
-          material: {
-            type: 'gemstone',
-            name: 'Blue Sapphire',
-            color: '#0066cc',
-            metallic: 0,
-            roughness: 0.05,
-            transparency: 0.8,
-            refraction: 1.77,
-          },
-          size: 0.8,
-          weight: 0.2,
-          attachmentType: 'segment',
-          metadata: {
-            description: 'A brilliant cut blue sapphire',
-            rarity: 'legendary',
-          },
-        },
-        attachmentPointId: 'right',
       },
     ],
     displaySettings: {
@@ -145,17 +97,15 @@ export const Scene: React.FC<SceneProps> = ({
       background: 'gradient',
     },
     metadata: {
-      description: 'A demo necklace showcasing the GLTF loading system with multiple charms',
+      description: 'Brilliant necklace with reflective materials',
       category: 'demo',
-      tags: ['gold', 'chain', 'pendant', 'pearl', 'sapphire'],
+      tags: ['gold', 'chain', 'pendant', 'silver'],
       created: new Date(),
       modified: new Date(),
     },
   }
 
   const currentNecklace = selectedNecklace || demoNecklace
-  const lighting = viewerState?.lighting || 'studio'
-  const showAttachmentPoints = viewerState?.showAttachmentPoints || false
 
   const handleCharmHover = (charmId: string | null) => {
     setHoveredCharm(charmId)
@@ -164,71 +114,115 @@ export const Scene: React.FC<SceneProps> = ({
 
   return (
     <>
-      {/* Lighting System */}
-      <Lighting preset={lighting} intensity={1} />
+      {/* HDRI Environment for Reflections */}
+      <Environment preset="studio" background={false} />
+
+      {/* Bright Studio Lighting */}
+      <ambientLight intensity={0.8} color="#ffffff" />
+      <directionalLight 
+        position={[10, 10, 5]} 
+        intensity={2.0} 
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        color="#ffffff"
+      />
+      <directionalLight 
+        position={[-8, 8, 4]} 
+        intensity={1.5} 
+        color="#f8f8ff"
+      />
+      <pointLight position={[-8, 6, -6]} intensity={1.5} color="#ffe4b5" />
+      <pointLight position={[5, -5, 8]} intensity={1.2} color="#e6e6fa" />
+      <pointLight position={[0, 8, 0]} intensity={1.0} color="#ffffff" />
+
+      {/* Bright Ground Plane */}
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -3, 0]}>
+        <planeGeometry args={[20, 20]} />
+        <meshStandardMaterial 
+          color="#444444" 
+          roughness={0.6}
+          metalness={0.2}
+        />
+      </mesh>
+
+      {/* Highly Reflective Test Cube */}
+      <mesh position={[2, 1, 0]} castShadow>
+        <boxGeometry args={[0.8, 0.8, 0.8]} />
+        <meshStandardMaterial 
+          color="#ff6b6b" 
+          metalness={1.0}
+          roughness={0.1}
+          envMapIntensity={2.0}
+        />
+      </mesh>
+
+      {/* Additional Test Sphere for reflection comparison */}
+      <mesh position={[-2, 0.5, 0]} castShadow>
+        <sphereGeometry args={[0.5]} />
+        <meshStandardMaterial 
+          color="#4ecdc4" 
+          metalness={1.0}
+          roughness={0.0}
+          envMapIntensity={3.0}
+        />
+      </mesh>
 
       {/* Main Necklace */}
       <Necklace
         necklace={currentNecklace}
-        showAttachmentPoints={showAttachmentPoints}
+        showAttachmentPoints={false}
         animateCharms={true}
         onCharmClick={onCharmClick}
         onCharmHover={handleCharmHover}
       />
 
-      {/* Ground Plane */}
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -3, 0]}>
-        <planeGeometry args={[20, 20]} />
-        <meshStandardMaterial color="#2a2a2a" />
-      </mesh>
-
-      {/* Welcome Text */}
+      {/* Title */}
       <Text
-        position={[0, 3, 0]}
+        position={[0, 3.5, 0]}
         fontSize={0.6}
-        color="white"
+        color="#ffffff"
         anchorX="center"
         anchorY="middle"
       >
         {currentNecklace.name}
       </Text>
 
-      {/* Subtitle - showing GLTF loading status */}
+      {/* Subtitle */}
       <Text
-        position={[0, 2.5, 0]}
+        position={[0, 3.0, 0]}
         fontSize={0.25}
         color="#4ecdc4"
         anchorX="center"
         anchorY="middle"
       >
-        GLTF Model Loading with Fallback Support
+        HDRI Environment Reflections • Bright Studio Lighting
       </Text>
 
-      {/* Hovered Charm Info */}
+      {/* Hover info */}
       {hoveredCharm && (
         <Text
-          position={[0, 2, 0]}
-          fontSize={0.3}
+          position={[0, 2.3, 0]}
+          fontSize={0.35}
           color="#ff6b6b"
           anchorX="center"
           anchorY="middle"
         >
-          {currentNecklace.charms.find(c => c.charm.id === hoveredCharm)?.charm.name || 'Unknown Charm'}
+          ✨ {currentNecklace.charms.find(c => c.charm.id === hoveredCharm)?.charm.name}
         </Text>
       )}
 
       {/* Instructions */}
       <Text
         position={[0, -2.5, 0]}
-        fontSize={0.2}
+        fontSize={0.22}
         color="#cccccc"
         anchorX="center"
         anchorY="middle"
       >
-        Click on charms to interact • Models load with procedural fallbacks
+        Bright lighting with realistic reflections • Drag to rotate • Scroll to zoom
       </Text>
 
-      {/* Camera Controls */}
+      {/* Enhanced Controls */}
       <OrbitControls
         enablePan={true}
         enableZoom={true}
@@ -236,6 +230,9 @@ export const Scene: React.FC<SceneProps> = ({
         maxDistance={10}
         minDistance={2}
         target={[0, -0.5, 0]}
+        enableDamping={true}
+        dampingFactor={0.08}
+        autoRotate={false}
       />
     </>
   )

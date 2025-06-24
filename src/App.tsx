@@ -40,6 +40,8 @@ function App() {
           shadows
           camera={{ position: [3, 3, 3], fov: 60 }}
           style={{ width: '100vw', height: '80vh' }}
+          dpr={[1, 2]}
+          gl={{ antialias: true }}
         >
           <Scene
             viewerState={viewerState}

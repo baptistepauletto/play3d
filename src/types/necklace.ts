@@ -79,7 +79,7 @@ export interface Necklace {
   displaySettings: {
     defaultCameraPosition: THREE.Vector3Tuple
     defaultCameraTarget: THREE.Vector3Tuple
-    lighting: 'studio' | 'natural' | 'dramatic' | 'soft'
+    lighting: 'studio' | 'natural' | 'dramatic' | 'soft' | 'jewelry-studio'
     background: 'gradient' | 'hdri' | 'solid'
   }
   metadata: {
@@ -108,7 +108,7 @@ export interface ViewerState {
   selectedCharmId: string | null
   cameraMode: 'orbit' | 'preset' | 'cinematic'
   displayMode: 'floating' | 'mannequin' | 'flat'
-  lighting: 'studio' | 'natural' | 'dramatic' | 'soft'
+  lighting: 'studio' | 'natural' | 'dramatic' | 'soft' | 'jewelry-studio'
   showPhysics: boolean
   showAttachmentPoints: boolean
 }
